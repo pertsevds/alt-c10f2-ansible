@@ -10,6 +10,10 @@ on:
   schedule:
     - cron: "12 1 * * 0"
 
+env:
+  IMAGE_REPO: ghcr.io
+  IMAGE_USER: pertsevds
+
 jobs:
   # Test the image builds and works correctly.
   test:
@@ -40,22 +44,28 @@ jobs:
           docker exec test-container sh -c 'test "$(. /etc/os-release; echo "$ALT_BRANCH_ID")" = c10f2'
           docker exec test-container sh -c 'test "$(cat /proc/1/comm)" = systemd'
 
-  # If on main branch, build and release image.
+  # Build each architecture on a native runner to avoid QEMU during RPM transactions.
   release:
-    name: Release
-    runs-on: ubuntu-latest
+    name: Release ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
     needs: test
     if: github.ref == 'refs/heads/main'
-    env:
-      IMAGE_REPO: ghcr.io
-      IMAGE_USER: pertsevds
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            platform: linux/arm64
+            runner: ubuntu-24.04-arm
     permissions:
       contents: read
       packages: write
 
     steps:
       - uses: actions/checkout@v7
-      - uses: docker/setup-qemu-action@v4
       - uses: docker/setup-buildx-action@v4
 
       - name: Login to GHCR
@@ -85,13 +95,63 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_TOKEN }}
 
-      - name: Build and push image.
+      - name: Build and push architecture image.
         uses: docker/build-push-action@v7
         with:
           context: ./
           file: Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           push: true
           provenance: mode=max
           sbom: true
-          tags: ${{ env.IMAGE_REPO }}/${{ env.IMAGE_USER }}/alt-c10f2-ansible:latest
+          tags: ${{ env.IMAGE_REPO }}/${{ env.IMAGE_USER }}/alt-c10f2-ansible:latest-${{ matrix.arch }}
+
+  release_manifest:
+    name: Release multi-platform image
+    runs-on: ubuntu-24.04
+    needs: release
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Login to GHCR
+        if: env.IMAGE_REPO == 'ghcr.io'
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.IMAGE_REPO }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check external registry credentials
+        if: env.IMAGE_REPO != 'ghcr.io'
+        env:
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+        run: |
+          if [ -z "$REGISTRY_USERNAME" ] || [ -z "$REGISTRY_TOKEN" ]; then
+            echo '::error::Set REGISTRY_USERNAME and REGISTRY_TOKEN secrets for an external registry.'
+            exit 1
+          fi
+
+      - name: Login to external registry
+        if: env.IMAGE_REPO != 'ghcr.io'
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.IMAGE_REPO }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      - name: Create and verify multi-platform image
+        run: |
+          image="${IMAGE_REPO}/${IMAGE_USER}/alt-c10f2-ansible"
+          docker buildx imagetools create \
+            --tag "${image}:latest" \
+            "${image}:latest-amd64" \
+            "${image}:latest-arm64"
+          docker buildx imagetools inspect --raw "${image}:latest" | \
+            jq -e '[.manifests[].platform | select(.os == "linux") | .architecture] |
+                   index("amd64") != null and index("arm64") != null'

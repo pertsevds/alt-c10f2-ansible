@@ -6,13 +6,14 @@ ALT Linux c10f2 Docker container for Ansible playbook and role testing, based on
 
 `ghcr.io/pertsevds/alt-c10f2-ansible:latest`
 
-The published image path is `<repo>/<user>/alt-c10f2-ansible:latest`. Edit `IMAGE_REPO` (the registry host) and `IMAGE_USER` (the image owner) in the release job of `.github/workflows/build.yml` to change it. Their defaults are `ghcr.io` and `pertsevds`. The examples below use those defaults; substitute your configured path if you change them.
+The published image path is `<repo>/<user>/alt-c10f2-ansible:latest`. Edit `IMAGE_REPO` (the registry host) and `IMAGE_USER` (the image owner) in `.github/workflows/build.yml` to change it. Their defaults are `ghcr.io` and `pertsevds`. The examples below use those defaults; substitute your configured path if you change them.
 
 For a registry other than GHCR, set the GitHub Actions repository secrets `REGISTRY_USERNAME` and `REGISTRY_TOKEN` for an account that can push to the configured image path. GHCR uses the workflow's `GITHUB_TOKEN` by default.
 
 ## Tags
 
   - `latest`: Ansible from the ALT Linux c10f2 package repository.
+  - `latest-amd64` and `latest-arm64`: Architecture images built on native GitHub runners and combined under `latest`.
 
 ## How to Build
 
