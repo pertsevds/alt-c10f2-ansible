@@ -8,6 +8,8 @@ on:
 
 jobs:
   clean:
+    permissions:
+      packages: write
     runs-on: ubuntu-latest
     name: Delete untagged images
     steps:
