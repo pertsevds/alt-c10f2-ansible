@@ -156,5 +156,3 @@ jobs:
           docker buildx imagetools inspect --raw "${image}:latest" | \
             jq -e '[.manifests[].platform | select(.os == "linux") | .architecture] |
                    index("amd64") != null and index("arm64") != null'
-          docker pull --platform linux/amd64 "${image}:latest"
-          docker pull --platform linux/arm64 "${image}:latest"
