@@ -17,7 +17,11 @@ For a registry other than GHCR, set the GitHub Actions repository secrets `REGIS
 
 ## How to Build
 
-GitHub Actions builds and tests the image on pull requests, pushes to `main`, and a weekly schedule. Builds from `main` are published to the configured registry. To build the image locally:
+GitHub Actions builds and tests the image on pull requests, pushes to `main`, and a weekly schedule. Builds from `main` are published to the configured registry.
+
+After a successful GHCR release, the workflow removes untagged package versions that are not referenced by any current image tag. The repository must have admin access to the GHCR package for deletion. This cleanup does not run for other registries.
+
+To build the image locally:
 
   1. [Install Docker](https://docs.docker.com/engine/installation/).
   2. `cd` into this directory.
