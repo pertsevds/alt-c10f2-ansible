@@ -104,6 +104,7 @@ jobs:
           push: true
           provenance: mode=max
           sbom: true
+          labels: org.opencontainers.image.revision=${{ github.sha }}
           tags: ${{ env.IMAGE_REPO }}/${{ env.IMAGE_USER }}/alt-c10f2-ansible:latest-${{ matrix.arch }}
 
   release_manifest:
@@ -155,3 +156,5 @@ jobs:
           docker buildx imagetools inspect --raw "${image}:latest" | \
             jq -e '[.manifests[].platform | select(.os == "linux") | .architecture] |
                    index("amd64") != null and index("arm64") != null'
+          docker pull --platform linux/amd64 "${image}:latest"
+          docker pull --platform linux/arm64 "${image}:latest"
