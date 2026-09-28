@@ -27,6 +27,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible on the runner.
+        run: |
+          python -m venv "$RUNNER_TEMP/ansible"
+          "$RUNNER_TEMP/ansible/bin/python" -m pip install --no-cache-dir ansible
+          "$RUNNER_TEMP/ansible/bin/ansible-galaxy" collection install community.docker
+          echo "$RUNNER_TEMP/ansible/bin" >> "$GITHUB_PATH"
+
       - name: Test building image.
         run: docker build -t docker-ansible .
 
@@ -36,11 +47,19 @@ jobs:
           -v /sys/fs/cgroup:/sys/fs/cgroup:rw --cgroupns=host
           docker-ansible
 
-      - name: Verify Ansible is accessible in the built image.
+      - name: Verify the image is a managed target.
         run: |
-          docker exec test-container pip3 show ansible ansible-core
-          docker exec test-container ansible --version
-          docker exec test-container ansible -i /etc/ansible/hosts local -m ping
+          docker exec test-container python3 --version
+          docker exec test-container sh -c 'for tool in python3 sudo systemctl wget ps ip ss dbus-daemon; do command -v "$tool" || exit 1; done'
+          docker exec test-container sh -c '! command -v ansible && test ! -e /etc/ansible/hosts'
+
+      - name: Verify Ansible can manage the container from the runner.
+        run: |
+          ansible --version
+          target=(test-container -i 'test-container,' -c community.docker.docker -u root -e ansible_python_interpreter=/usr/bin/python3)
+          ansible "${target[@]}" -m ansible.builtin.ping
+          ansible "${target[@]}" -m ansible.builtin.setup
+          ansible "${target[@]}" -m ansible.builtin.systemd_service -a 'name=dbus state=started'
 
       - name: Verify ALT Linux and systemd.
         run: |
@@ -50,6 +69,10 @@ jobs:
 
       - name: Test GHCR retention selection
         run: python3 -m unittest discover -s tests
+
+      - name: Remove the test container.
+        if: always()
+        run: docker rm -f test-container
 
   # Build each architecture on a native runner to avoid QEMU during RPM transactions.
   release:
