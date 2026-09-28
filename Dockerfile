@@ -5,6 +5,7 @@ SHELL ["/bin/bash", "-xueo", "pipefail", "-c"]
 ARG TARGETARCH
 
 ENV LANG="C.UTF-8"
+ENV pip_packages="ansible cryptography"
 
 # Install dependencies.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache-"$TARGETARCH" \
@@ -12,11 +13,14 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache-"$TARGE
     && apt-get update \
     && apt-get dist-upgrade -y \
     && apt-get install -y \
-       ansible sudo systemd sysvinit-utils \
+       python3 python3-module-pip sudo systemd sysvinit-utils \
        wget procps \
        iproute2 dbus \
     && rm -rf /var/lib/apt/lists/* \
     && rm -Rf /usr/share/doc && rm -Rf /usr/share/man
+
+# Install Ansible and cryptography.
+RUN pip3 install --no-cache-dir $pip_packages
 
 COPY initctl_faker /initctl_faker
 

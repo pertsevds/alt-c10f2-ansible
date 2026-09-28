@@ -38,7 +38,7 @@ jobs:
 
       - name: Verify Ansible is accessible in the built image.
         run: |
-          docker exec test-container rpm -q ansible ansible-core
+          docker exec test-container pip3 show ansible ansible-core
           docker exec test-container ansible --version
           docker exec test-container ansible -i /etc/ansible/hosts local -m ping
 

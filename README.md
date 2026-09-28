@@ -12,7 +12,7 @@ For a registry other than GHCR, set the GitHub Actions repository secrets `REGIS
 
 ## Tags
 
-  - `latest`: Ansible from the ALT Linux c10f2 package repository.
+  - `latest`: Ansible installed with pip3 from PyPI (newest version compatible with the image's Python).
   - `latest-amd64` and `latest-arm64`: Architecture images built on native GitHub runners and combined under `latest`.
 
 ## How to Build
