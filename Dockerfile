@@ -6,6 +6,7 @@ ARG TARGETARCH
 
 ENV LANG="C.UTF-8"
 ENV pip_packages="ansible cryptography"
+ENV PATH="/opt/ansible/bin:${PATH}"
 
 # Install dependencies.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache-"$TARGETARCH" \
@@ -13,14 +14,15 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache-"$TARGE
     && apt-get update \
     && apt-get dist-upgrade -y \
     && apt-get install -y \
-       python3 python3-module-pip sudo systemd sysvinit-utils \
+       python3 python3.12 sudo systemd sysvinit-utils \
        wget procps \
        iproute2 dbus \
     && rm -rf /var/lib/apt/lists/* \
     && rm -Rf /usr/share/doc && rm -Rf /usr/share/man
 
-# Install Ansible and cryptography.
-RUN pip3 install --no-cache-dir $pip_packages
+# Install Ansible and cryptography in a Python 3.12 virtual environment.
+RUN python3.12 -m venv /opt/ansible \
+    && /opt/ansible/bin/python -m pip install --no-cache-dir $pip_packages
 
 COPY initctl_faker /initctl_faker
 

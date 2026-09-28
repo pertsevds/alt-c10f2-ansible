@@ -12,7 +12,7 @@ For a registry other than GHCR, set the GitHub Actions repository secrets `REGIS
 
 ## Tags
 
-  - `latest`: Ansible installed with pip3 from PyPI (newest version compatible with the image's Python).
+  - `latest`: Ansible installed from PyPI in a Python 3.12 virtual environment (newest version compatible with Python 3.12).
   - `latest-amd64` and `latest-arm64`: Architecture images built on native GitHub runners and combined under `latest`.
 
 ## How to Build
@@ -66,5 +66,7 @@ platforms:
     `docker exec --tty [container_id] env TERM=xterm ansible-playbook /path/to/ansible/playbook.yml --syntax-check`
 
 ## Notes
+
+Ansible and cryptography are installed in `/opt/ansible`, using ALT's `python3.12` package. The virtual environment is on `PATH`, so `ansible`, `ansible-playbook`, and `pip3` work without activation. Use `/opt/ansible/bin/python -m pip` to manage Ansible's Python packages. ALT's system Python remains available at `/usr/bin/python3`, and managed-node interpreter discovery is unchanged.
 
 This image is adapted from https://github.com/geerlingguy/docker-debian12-ansible/.
