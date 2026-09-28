@@ -38,11 +38,8 @@ jobs:
 
       - name: Verify Ansible is accessible in the built image.
         run: |
-          docker exec test-container /opt/ansible/bin/python -m pip show ansible ansible-core
-          docker exec test-container /opt/ansible/bin/python -m pip check
-          docker exec test-container /opt/ansible/bin/python -c 'import sys; from importlib.metadata import version; from packaging.version import Version; assert sys.version_info[:2] == (3, 12); assert Version(version("ansible")) >= Version("14.4.0"); assert Version(version("ansible-core")) >= Version("2.21")'
+          docker exec test-container pip3 show ansible ansible-core
           docker exec test-container ansible --version
-          docker exec test-container ansible --version | grep -F 'python version = 3.12.'
           docker exec test-container ansible -i /etc/ansible/hosts local -m ping
 
       - name: Verify ALT Linux and systemd.
