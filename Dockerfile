@@ -8,13 +8,16 @@ ENV LANG="C.UTF-8"
 
 # Install dependencies.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache-"$TARGETARCH" \
-    mkdir -p /var/cache/apt/archives/partial \
+    mkdir -p /var/lib/apt/lists/partial /var/cache/apt/archives/partial \
     && apt-get update \
     && apt-get dist-upgrade -y \
     && apt-get install -y \
        python3 sudo systemd wget procps iproute2 dbus \
     && rm -rf /var/lib/apt/lists/* \
     && rm -Rf /usr/share/doc && rm -Rf /usr/share/man
+
+# Retain APT directories after list cleanup and outside the build cache mount.
+RUN mkdir -p /var/lib/apt/lists/partial /var/cache/apt/archives/partial
 
 COPY initctl_faker /initctl_faker
 
